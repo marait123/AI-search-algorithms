@@ -5,9 +5,9 @@ from helpers import utils
 # TODO: Import any modules or write any helper functions you want to use
 
 
-def log(message):
+def log(*message):
     with open("debug.txt", "a") as f:
-        f.writelines([message])
+        f.write(str(message) + "\n")
         f.close()
 # All search functions take a problem and a state
 # If it is an informed search function, it will also receive a heuristic function
@@ -29,13 +29,25 @@ def BreadthFirstSearch(problem: Problem[S, A], initial_state: S) -> Solution:
         front_count -= 1
         explored[parent] = True
         if problem.is_goal(parent):
-            print("I found solution")
-            return []
+            par, act = parent_graph[parent]
+            # print("debugging1\n")
+            # print("I found solution\n")
+            # print("graph is ", parent_graph)
+            # print("initial par and act ", par, "-", act)
+            actionList = []
+            while par != initial_state:
+                # print("par and act ", par, "-", act)
+
+                actionList.append(act)
+                par, act = parent_graph[par]
+            actionList.append(act)
+            reactionList = [a for a in reversed(actionList)]
+            return reactionList
         reachable_actions = problem.get_actions(parent)
         for action in reachable_actions:
             child = problem.get_successor(parent, action)
             if child not in explored and child not in fronteir:
-
+                parent_graph[child] = (parent, action)
                 fronteir.append(child)
                 front_count += 1
 
