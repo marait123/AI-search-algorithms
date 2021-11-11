@@ -23,17 +23,19 @@ def BreadthFirstSearch(problem: Problem[S, A], initial_state: S) -> Solution:
     explored = {}
     fronteir = [initial_state]
     front_count = 1
-
+    parent_graph = {}
     while front_count != 0:
         parent = fronteir.pop(0)
         front_count -= 1
         explored[parent] = True
-        if(parent == initial_state):
-            return ["I found solution"]
+        if problem.is_goal(parent):
+            print("I found solution")
+            return []
         reachable_actions = problem.get_actions(parent)
         for action in reachable_actions:
             child = problem.get_successor(parent, action)
             if child not in explored and child not in fronteir:
+
                 fronteir.append(child)
                 front_count += 1
 
@@ -41,18 +43,20 @@ def BreadthFirstSearch(problem: Problem[S, A], initial_state: S) -> Solution:
 
 
 def DepthFirstSearch(problem: Problem[S, A], initial_state: S) -> Solution:
-    #TODO: ADD YOUR CODE HERE
+    # TODO: ADD YOUR CODE HERE
     utils.NotImplemented()
-    
+
 
 def UniformCostSearch(problem: Problem[S, A], initial_state: S) -> Solution:
-    #TODO: ADD YOUR CODE HERE
+    # TODO: ADD YOUR CODE HERE
     utils.NotImplemented()
+
 
 def AStarSearch(problem: Problem[S, A], initial_state: S, heuristic: HeuristicFunction) -> Solution:
-    #TODO: ADD YOUR CODE HERE
+    # TODO: ADD YOUR CODE HERE
     utils.NotImplemented()
 
+
 def BestFirstSearch(problem: Problem[S, A], initial_state: S, heuristic: HeuristicFunction) -> Solution:
-    #TODO: ADD YOUR CODE HERE
+    # TODO: ADD YOUR CODE HERE
     utils.NotImplemented()
