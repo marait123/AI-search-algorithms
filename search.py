@@ -22,6 +22,7 @@ def BreadthFirstSearch(problem: Problem[S, A], initial_state: S) -> Solution:
     # TODO: ADD YOUR CODE HERE
     explored = {}
     fronteir = [initial_state]
+    # this more optimized than using len(fronteir) as len traverses the list
     front_count = 1
     parent_graph = {}
     while front_count != 0:
@@ -40,7 +41,7 @@ def BreadthFirstSearch(problem: Problem[S, A], initial_state: S) -> Solution:
 
                 actionList.append(act)
                 par, act = parent_graph[par]
-            actionList.append(act)
+            actionList.append(act)  # append the action from the initial state
             reactionList = [a for a in reversed(actionList)]
             return reactionList
         reachable_actions = problem.get_actions(parent)
@@ -56,7 +57,24 @@ def BreadthFirstSearch(problem: Problem[S, A], initial_state: S) -> Solution:
 
 def DepthFirstSearch(problem: Problem[S, A], initial_state: S) -> Solution:
     # TODO: ADD YOUR CODE HERE
-    utils.NotImplemented()
+    # print("checking goal")
+    def RecurDepth(i_state, explored):
+        explored[i_state] = True
+        if(problem.is_goal(i_state)):
+            # print("goal is found")
+            return []
+
+        reachable_actions = problem.get_actions(i_state)
+        for action in reachable_actions:
+            child = problem.get_successor(i_state, action)
+            if child not in explored:   # explore only unexplored nodes as this is graph search
+                answer = RecurDepth(child, explored)
+                if not(answer is None):
+                    # the answer is formed so that near goal (answer) comes last in the list
+                    return [action] + answer
+        return None
+    explored = {}
+    return RecurDepth(initial_state, explored)
 
 
 def UniformCostSearch(problem: Problem[S, A], initial_state: S) -> Solution:
