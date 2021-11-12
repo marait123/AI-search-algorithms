@@ -1,3 +1,4 @@
+from typing import Tuple, Union
 from problem import HeuristicFunction, Problem, S, A, Solution
 from collections import deque
 from helpers import utils
@@ -80,65 +81,88 @@ def DepthFirstSearch(problem: Problem[S, A], initial_state: S) -> Solution:
     return RecurDepth(initial_state, explored)
 
 
+class MyQueue():
+    def __init__(self):
+        self.container = {}
+        self.size = 0
+
+    def len(self):
+        return self.size
+
+    def insert(self, element, cost):
+        if element in self.container:
+            if cost < self.container[element]:
+                self.container[element] = cost
+            # else don't append
+        else:
+            self.container[element] = cost
+            self.size += 1
+
+    def getValue(self, key):
+        return self.container[key]
+
+    def replace(self, key, new_cost):
+        self.container[key] = new_cost
+
+    def find(self, key) -> bool:
+        return key in self.container
+
+    def pop(self) -> Tuple[S, float]:
+        # container is
+        # elem = None
+        # for el in self.container:
+        #     elem = el
+        #     print("element$", el)
+        # print("first key ", elem, " value ", self.container[elem])
+        minKey = min(self.container, key=self.container.get)
+        # print("minKey is ", minKey)
+        cost = self.container[minKey]
+        self.removeElement(minKey)
+        return minKey, cost
+
+    def removeElement(self, key):
+        self.size -= 1
+        del self.container[key]
+
+
 def UniformCostSearch(problem: Problem[S, A], initial_state: S) -> Solution:
     # TODO: ADD YOUR CODE HERE
-    class myCounter():
-        def __init__(self):
-            self.count = 0
-
-        def get(self):
-            self.count += 1
-            return self.count
-    counter = myCounter()
-
+    fronteir = MyQueue()
     explored = {}
-    fronteir = queue.PriorityQueue()
-    fronteir.put((0, counter.get(), initial_state))
-    front_hash = {}
-    front_hash[initial_state] = 0
+    fronteir.insert(initial_state, 0)
 
-    # this more optimized than using len(fronteir) as len traverses the list
-    front_count = 1
-    parent_graph = {}
-    while front_count != 0:
-        priority, _, parent = fronteir.get()
-        front_count -= 1
-        explored[parent] = True
-
-        if problem.is_goal(parent):  # if goal is reached
-            par, act = parent_graph[parent]
+    parent_graph = {}  # child will refer to his parent and the action
+    # loop while fronteir not empty
+    while fronteir.len() > 0:
+        # get the 1st element in fronteir
+        # print("fronteir.container ", fronteir.container)
+        parentNode, parentCost = fronteir.pop()
+        # check if parentNode is the goal
+        if problem.is_goal(parentNode):
+            par, act = parent_graph[parentNode]
             actionList = []
             while par != initial_state:
+                # print("par and act ", par, "-", act)
                 actionList.append(act)
                 par, act = parent_graph[par]
             actionList.append(act)  # append the action from the initial state
             reactionList = [a for a in reversed(actionList)]
             return reactionList
-
-        reachable_actions = problem.get_actions(parent)
-        for action in reachable_actions:
-            child = problem.get_successor(parent, action)
-            if child not in explored and child not in front_hash:
-                # insert child in fronteir
-                parent_graph[child] = (parent, action)
-                cost = front_hash[parent] + \
-                    problem.get_cost(parent, action)
-                fronteir.put((cost, counter.get(), child))
-                # this is the cost of adding it
-                front_hash[child] = front_hash[parent] + \
-                    problem.get_cost(parent, action)
-                front_count += 1
-            elif child in front_hash and front_hash[child] != -1:
-                cost = front_hash[parent] + \
-                    problem.get_cost(parent, action)
-                if(cost < front_hash[child]):
-                    front_hash[child] = cost
-                    # replace the one with m
-                    fronteir.put((cost, counter.get(), initial_state))
-
-                    pass
-        front_hash[parent] = -1  # remove it from hash
-
+        # add parentNode to explored
+        explored[parentNode] = True
+        # loop on all possible actions
+        for action in problem.get_actions(parentNode):
+            childNode = problem.get_successor(parentNode, action)
+            # calculate the newChild Cost
+            childCost = parentCost + problem.get_cost(parentNode, action)
+            # print("childCost is ", childCost)
+            # childNode not in explored or fronteir
+            if childNode not in explored and (not fronteir.find(childNode)):
+                parent_graph[childNode] = (parentNode, action)
+                fronteir.insert(childNode, childCost)
+            elif fronteir.find(childNode) and childCost < fronteir.getValue(childNode):
+                parent_graph[childNode] = (parentNode, action)
+                fronteir.replace(childNode, childCost)
     return None
 
 
