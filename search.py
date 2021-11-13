@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Container, Tuple, Union
 from problem import HeuristicFunction, Problem, S, A, Solution
 from collections import deque
 from helpers import utils
@@ -21,29 +21,39 @@ class MyQueue():
     def len(self):
         return self.size
 
-    def insert(self, element, cost):
-        if element in self.container:
-            if cost < self.container[element]:
-                self.container[element] = cost
+    def insert(self, key, costDic):
+        """
+        @params
+        ------------------------------------------
+        key : is the key used to store the costDic
+        costDic: this is a dictionary of the shape {'cost':3.4, <extra>:...}
+        """
+        if key in self.container:
+            if costDic['cost'] < self.container[key]['cost']:
+                self.container[key] = costDic
             # else don't append
         else:
-            self.container[element] = cost
+            self.container[key] = costDic
             self.size += 1
 
     def getValue(self, key):
         return self.container[key]
 
-    def replace(self, key, new_cost):
-        self.container[key] = new_cost
+    def getCost(self, key):
+        return self.container[key]['cost']
+
+    def replace(self, key, new_costDic):
+        self.container[key] = new_costDic
 
     def find(self, key) -> bool:
         return key in self.container
 
     def pop(self) -> Tuple[S, float]:
-        minKey = min(self.container, key=self.container.get)
-        cost = self.container[minKey]
+        minKey = min(self.container,
+                     key=lambda key: self.container[key]['cost'])
+        costDic = self.container[minKey]
         self.removeElement(minKey)
-        return minKey, cost
+        return minKey, costDic
 
     def removeElement(self, key):
         self.size -= 1
@@ -121,14 +131,15 @@ def UniformCostSearch(problem: Problem[S, A], initial_state: S) -> Solution:
     # TODO: ADD YOUR CODE HERE
     fronteir = MyQueue()
     explored = {}
-    fronteir.insert(initial_state, 0)
+    fronteir.insert(initial_state, {'cost': 0})
 
     parent_graph = {}  # child will refer to his parent and the action
     # loop while fronteir not empty
     while fronteir.len() > 0:
         # get the 1st element in fronteir
         # print("fronteir.container ", fronteir.container)
-        parentNode, parentCost = fronteir.pop()
+        parentNode, parentDic = fronteir.pop()
+        parentCost = parentDic['cost']
         # check if parentNode is the goal
         if problem.is_goal(parentNode):
             par, act = parent_graph[parentNode]
@@ -151,10 +162,10 @@ def UniformCostSearch(problem: Problem[S, A], initial_state: S) -> Solution:
             # childNode not in explored or fronteir
             if childNode not in explored and (not fronteir.find(childNode)):
                 parent_graph[childNode] = (parentNode, action)
-                fronteir.insert(childNode, childCost)
-            elif fronteir.find(childNode) and childCost < fronteir.getValue(childNode):
+                fronteir.insert(childNode, {'cost': childCost})
+            elif fronteir.find(childNode) and childCost < fronteir.getCost(childNode):
                 parent_graph[childNode] = (parentNode, action)
-                fronteir.replace(childNode, childCost)
+                fronteir.replace(childNode, {'cost': childCost})
     return None
 
 
@@ -164,7 +175,8 @@ def AStarSearch(problem: Problem[S, A], initial_state: S, heuristic: HeuristicFu
     #     return 0
     fronteir = MyQueue()
     explored = {}
-    fronteir.insert(initial_state, 0 + heuristic(problem, initial_state))
+    fronteir.insert(
+        initial_state, {'cost': 0 + heuristic(problem, initial_state), 'gCost': 0})
 
     # print("initial is ", heuristic(problem, initial_state))
     parent_graph = {}  # child will refer to his parent and the action
@@ -172,9 +184,13 @@ def AStarSearch(problem: Problem[S, A], initial_state: S, heuristic: HeuristicFu
     while fronteir.len() > 0:
         # get the 1st element in fronteir
         # print("fronteir.container ", fronteir.container)
-        parentNode, parentCost = fronteir.pop()
+        parentNode, costDic = fronteir.pop()
+        # this is the total heuristics + path cost
+        parentCost = costDic['cost']
+        parentGCost = costDic['gCost']  # this is the cumulative path Cost
         # check if parentNode is the goal
         if problem.is_goal(parentNode):
+            # use backtracking on the parentGraph where a child refers to its parent
             par, act = parent_graph[parentNode]
             actionList = []
             while par != initial_state:
@@ -186,7 +202,7 @@ def AStarSearch(problem: Problem[S, A], initial_state: S, heuristic: HeuristicFu
             return reactionList
         # add parentNode to explored
         explored[parentNode] = True
-        print("parentNode is ", parentNode, " parentCost is ", parentCost)
+        # print("parentNode is ", parentNode, " parentCost is ", parentCost)
 
         # loop on all possible actions
         for action in problem.get_actions(parentNode):
@@ -194,28 +210,19 @@ def AStarSearch(problem: Problem[S, A], initial_state: S, heuristic: HeuristicFu
             # calculate the newChild Cost
             # child Cost is the cost from start to child + heuristic
             # adding the total parent cost directly is errornous
-            childCost = parentCost + \
+            childCost = parentGCost + \
                 problem.get_cost(parentNode, action) + \
                 heuristic(problem, childNode)
-            # print(f'parentCost {parentCost} + problem.get_cost(parentNode, action) {problem.get_cost(parentNode, action)}  + heuristic(problem, childNode) {heuristic(problem, childNode)} = ChildCost {childCost}')
-            print(
-                f'{parentNode}({parentCost}) - {problem.get_cost(parentNode, action)} -> {childNode}({childCost}) ')
-            print(f'heuristic is {heuristic(problem, childNode)}')
-            # print(parentNode, "-> ",
-            #       childNode, " childCost is ", childCost, "  heuristic is ",
-            #       heuristic(problem, childNode))
+            childGCost = parentGCost + problem.get_cost(parentNode, action)
 
-            # print("childCost is ", childCost)
-            # childNode not in explored or fronteir
             if childNode not in explored and (not fronteir.find(childNode)):
                 parent_graph[childNode] = (parentNode, action)
-                fronteir.insert(childNode, childCost)
-                print(f'insert node {childNode} ({childCost})')
-            elif fronteir.find(childNode) and childCost < fronteir.getValue(childNode):
-                print(
-                    f'replace node {childNode} from cost {fronteir.getValue(childNode)} -to> ({childCost})')
+                fronteir.insert(
+                    childNode, {'cost': childCost, 'gCost': childGCost})
+            elif fronteir.find(childNode) and childCost < fronteir.getCost(childNode):
                 parent_graph[childNode] = (parentNode, action)
-                fronteir.replace(childNode, childCost)
+                fronteir.replace(
+                    childNode,  {'cost': childCost, 'gCost': childGCost})
 
     return None
 
@@ -224,12 +231,13 @@ def BestFirstSearch(problem: Problem[S, A], initial_state: S, heuristic: Heurist
     # TODO: ADD YOUR CODE HERE
     fronteir = MyQueue()
     explored = {}
-    fronteir.insert(initial_state, heuristic(problem, initial_state))
+    fronteir.insert(initial_state, {'cost': heuristic(problem, initial_state)})
     parent_graph = {}  # child will refer to his parent and the action
     # loop while fronteir not empty
     while fronteir.len() > 0:
         # get the 1st element in fronteir
-        parentNode, parentCost = fronteir.pop()
+        parentNode, costDic = fronteir.pop()
+        parent_cost = costDic['cost']
         # check if parentNode is the goal
         if problem.is_goal(parentNode):
             par, act = parent_graph[parentNode]
@@ -253,9 +261,9 @@ def BestFirstSearch(problem: Problem[S, A], initial_state: S, heuristic: Heurist
             # childNode not in explored or fronteir
             if childNode not in explored and (not fronteir.find(childNode)):
                 parent_graph[childNode] = (parentNode, action)
-                fronteir.insert(childNode, childCost)
-            elif fronteir.find(childNode) and childCost < fronteir.getValue(childNode):
+                fronteir.insert(childNode, {'cost': childCost})
+            elif fronteir.find(childNode) and childCost < fronteir.getCost(childNode):
                 parent_graph[childNode] = (parentNode, action)
-                fronteir.replace(childNode, childCost)
+                fronteir.replace(childNode, {'cost': childCost})
 
     return None
